@@ -12,7 +12,7 @@ LOCAL_SRC_FILES:= \
     at_tok.c
 
 LOCAL_SHARED_LIBRARIES := \
-    libcutils libutils libril
+    liblog libcutils libutils libril
 
 # for asprinf
 LOCAL_CFLAGS := -D_GNU_SOURCE
@@ -35,7 +35,6 @@ ifeq (foo,foo)
   #build shared library
   LOCAL_SHARED_LIBRARIES += \
       libcutils libutils
-  LOCAL_LDLIBS += -lpthread
   LOCAL_CFLAGS += -DRIL_SHLIB
   LOCAL_MODULE:= libreference-ril
   include $(BUILD_SHARED_LIBRARY)
