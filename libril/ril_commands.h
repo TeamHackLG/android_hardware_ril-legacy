@@ -141,3 +141,8 @@
     {RIL_REQUEST_GET_UICC_SUBSCRIPTION, dispatchVoid, responseUiccSubscription},
     {RIL_REQUEST_GET_DATA_SUBSCRIPTION, dispatchVoid, responseInts},
     {RIL_REQUEST_SET_SUBSCRIPTION_MODE, dispatchInts, responseVoid},
+    {RIL_REQUEST_SIM_TRANSMIT_BASIC, dispatchSIM_IO, responseSIM_IO},
+    {RIL_REQUEST_SIM_OPEN_CHANNEL, dispatchString, responseInts},
+    {RIL_REQUEST_SIM_CLOSE_CHANNEL, dispatchInts, responseVoid},
+    {RIL_REQUEST_SIM_TRANSMIT_CHANNEL, dispatchSIM_IO, responseSIM_IO},
+    {RIL_REQUEST_SIM_GET_ATR, dispatchInts, responseString},
