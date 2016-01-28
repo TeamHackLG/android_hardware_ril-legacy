@@ -273,6 +273,8 @@ extern "C" const char * failCauseToString(RIL_Errno);
 extern "C" const char * callStateToString(RIL_CallState);
 extern "C" const char * radioStateToString(RIL_RadioState);
 
+static int sendResponse (Parcel &p, int client_id);
+
 #ifdef RIL_SHLIB
 extern "C" void RIL_onUnsolicitedResponse(int unsolResponse, void *data,
                                 size_t datalen);
@@ -418,8 +420,14 @@ processCommandBuffer(void *buffer, size_t buflen, int client_id) {
     }
 
     if (request < 1 || request >= (int32_t)NUM_ELEMS(s_commands)) {
+        Parcel pErr;
         ALOGE("unsupported request code %d token %d", request, token);
         // FIXME this should perhaps return a response
+        pErr.writeInt32 (RESPONSE_SOLICITED);
+        pErr.writeInt32 (token);
+        pErr.writeInt32 (RIL_E_GENERIC_FAILURE);
+
+        sendResponse(pErr, client_id);
         return 0;
     }
 
@@ -1569,15 +1577,27 @@ static void dispatchUiccSubscripton(Parcel &p, RequestInfo *pRI) {
     memset(&uicc_sub, 0, sizeof(uicc_sub));
 
     status = p.readInt32(&t);
+    if (status != NO_ERROR) {
+        goto invalid;
+    }
     uicc_sub.slot = (int) t;
 
     status = p.readInt32(&t);
+    if (status != NO_ERROR) {
+        goto invalid;
+    }
     uicc_sub.app_index = (int) t;
 
     status = p.readInt32(&t);
+    if (status != NO_ERROR) {
+        goto invalid;
+    }
     uicc_sub.sub_type = (RIL_SubscriptionType) t;
 
     status = p.readInt32(&t);
+    if (status != NO_ERROR) {
+        goto invalid;
+    }
     uicc_sub.act_status = (RIL_UiccSubActStatus) t;
     startRequest;
 
@@ -3836,7 +3856,7 @@ const char *
 failCauseToString(RIL_Errno e) {
     switch(e) {
         case RIL_E_SUCCESS: return "E_SUCCESS";
-        case RIL_E_RADIO_NOT_AVAILABLE: return "E_RAIDO_NOT_AVAILABLE";
+        case RIL_E_RADIO_NOT_AVAILABLE: return "E_RADIO_NOT_AVAILABLE";
         case RIL_E_GENERIC_FAILURE: return "E_GENERIC_FAILURE";
         case RIL_E_PASSWORD_INCORRECT: return "E_PASSWORD_INCORRECT";
         case RIL_E_SIM_PIN2: return "E_SIM_PIN2";
