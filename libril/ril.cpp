@@ -56,6 +56,10 @@
 #include <ril_event.h>
 #include <telephony/ril_log.h>
 
+#ifdef RIL_VARIANT_LEGACY
+#include "rilj.h"
+#endif
+
 namespace android {
 
 #define PHONE_PROCESS "radio"
@@ -121,12 +125,18 @@ typedef struct {
     int requestNumber;
     void (*dispatchFunction) (Parcel &p, struct RequestInfo *pRI);
     int(*responseFunction) (Parcel &p, void *response, size_t responselen);
+#ifdef RIL_VARIANT_LEGACY
+    int reqNumRILJ;
+#endif
 } CommandInfo;
 
 typedef struct {
     int requestNumber;
     int (*responseFunction) (Parcel &p, void *response, size_t responselen);
     WakeType wakeType;
+#ifdef RIL_VARIANT_LEGACY
+    int reqNumRILJ;
+#endif
 } UnsolResponseInfo;
 
 typedef struct RequestInfo {
@@ -366,6 +376,17 @@ void   nullParcelReleaseFunction (const uint8_t* data, size_t dataSize,
     // do nothing -- the data reference lives longer than the Parcel object
 }
 
+#ifdef RIL_VARIANT_LEGACY
+CommandInfo * getCmdInfoByReqId(int request) {
+    for (int32_t rq = 1; rq < (int32_t)NUM_ELEMS(s_commands); rq++) {
+        if (s_commands[rq].requestNumber == request) {
+            return &(s_commands[rq]);
+        }
+    }
+    return NULL;
+}
+#endif
+
 /**
  * To be called from dispatch thread
  * Issue a single local request, ensuring that the response
@@ -380,7 +401,11 @@ issueLocalRequest(int request, void *data, int len, int client_id) {
 
     pRI->local = 1;
     pRI->token = 0xffffffff;        // token is not used in this context
+#ifdef RIL_VARIANT_LEGACY
+    pRI->pCI = getCmdInfoByReqId(request);
+#else
     pRI->pCI = &(s_commands[request]);
+#endif
     pRI->client_id = client_id;
 
     ret = pthread_mutex_lock(&s_pendingRequestsMutex);
@@ -419,13 +444,42 @@ processCommandBuffer(void *buffer, size_t buflen, int client_id) {
         return 0;
     }
 
+#ifdef RIL_VARIANT_LEGACY
+    CommandInfo * ci = NULL;
+    if (request > 0) {
+        // Translate RILJ req_id to RILC req_id
+        for (int32_t rq = 1; rq < (int32_t)NUM_ELEMS(s_commands); rq++) {
+            if (s_commands[rq].reqNumRILJ == request) {
+                ci = &(s_commands[rq]);
+                break;
+            }
+        }
+        if (!ci) {
+            ci = getCmdInfoByReqId(request);
+        }
+        if (ci) {
+            if (ci->requestNumber <= 0) {
+                ci = NULL;
+            } else {
+                request = ci->requestNumber;
+            }
+        }
+    }
+
+    if (!ci) {
+#else
     if (request < 1 || request >= (int32_t)NUM_ELEMS(s_commands)) {
+#endif
         Parcel pErr;
         ALOGE("unsupported request code %d token %d", request, token);
         // FIXME this should perhaps return a response
         pErr.writeInt32 (RESPONSE_SOLICITED);
         pErr.writeInt32 (token);
+#ifdef RIL_VARIANT_LEGACY
+        pErr.writeInt32 (RIL_E_REQUEST_NOT_SUPPORTED);
+#else
         pErr.writeInt32 (RIL_E_GENERIC_FAILURE);
+#endif
 
         sendResponse(pErr, client_id);
         return 0;
@@ -435,7 +489,11 @@ processCommandBuffer(void *buffer, size_t buflen, int client_id) {
     pRI = (RequestInfo *)calloc(1, sizeof(RequestInfo));
 
     pRI->token = token;
+#ifdef RIL_VARIANT_LEGACY
+    pRI->pCI = ci;
+#else
     pRI->pCI = &(s_commands[request]);
+#endif
     pRI->client_id = client_id;
 
     ret = pthread_mutex_lock(&s_pendingRequestsMutex);
@@ -3364,6 +3422,7 @@ RIL_register (const RIL_RadioFunctions *callbacks, int client_id) {
 
     // Little self-check
 
+#ifndef RIL_VARIANT_LEGACY
     for (int i = 0; i < (int)NUM_ELEMS(s_commands); i++) {
         assert(i == s_commands[i].requestNumber);
     }
@@ -3372,6 +3431,7 @@ RIL_register (const RIL_RadioFunctions *callbacks, int client_id) {
         assert(i + RIL_UNSOL_RESPONSE_BASE
                 == s_unsolResponses[i].requestNumber);
     }
+#endif
 
     // New rild impl calls RIL_startEventLoop() first
     // old standalone impl wants it here.
@@ -3704,7 +3764,9 @@ void
 RIL_onUnsolicitedSendResponse(int unsolResponse, void *data,
                                 size_t datalen, int client_id)
 {
+#ifndef RIL_VARIANT_LEGACY
     int unsolResponseIndex;
+#endif
     int ret;
     int64_t timeReceived = 0;
     bool shouldScheduleTimeout = false;
@@ -3716,6 +3778,32 @@ RIL_onUnsolicitedSendResponse(int unsolResponse, void *data,
         return;
     }
 
+#ifdef RIL_VARIANT_LEGACY
+    UnsolResponseInfo * uri = NULL;
+    int rilj_id = 0;
+    if (unsolResponse >= RIL_UNSOL_RESPONSE_BASE) {
+        // Translate RILJ res_id to RILC res_id
+        for (int32_t rq = 0; rq < (int32_t)NUM_ELEMS(s_unsolResponses); rq++) {
+            if (s_unsolResponses[rq].requestNumber == unsolResponse) {
+                uri = &(s_unsolResponses[rq]);
+                break;
+            }
+        }
+        if (uri) {
+            if (uri->reqNumRILJ > 0) {
+                rilj_id = uri->reqNumRILJ;
+            } else
+            if (uri->reqNumRILJ == 0) {
+                rilj_id = uri->requestNumber;
+            }
+        }
+    }
+
+    if (!uri || !rilj_id) {
+        ALOGE("unsupported unsolicited response code %d", unsolResponse);
+        return;
+    }
+#else
     unsolResponseIndex = unsolResponse - RIL_UNSOL_RESPONSE_BASE;
 
     if ((unsolResponseIndex < 0)
@@ -3723,11 +3811,16 @@ RIL_onUnsolicitedSendResponse(int unsolResponse, void *data,
         ALOGE("unsupported unsolicited response code %d", unsolResponse);
         return;
     }
+#endif
 
     // Grab a wake lock if needed for this reponse,
     // as we exit we'll either release it immediately
     // or set a timer to release it later.
+#ifdef RIL_VARIANT_LEGACY
+    switch (uri->wakeType) {
+#else
     switch (s_unsolResponses[unsolResponseIndex].wakeType) {
+#endif
         case WAKE_PARTIAL:
             grabPartialWakeLock();
             shouldScheduleTimeout = true;
@@ -3753,10 +3846,15 @@ RIL_onUnsolicitedSendResponse(int unsolResponse, void *data,
     Parcel p;
 
     p.writeInt32 (RESPONSE_UNSOLICITED);
+#ifdef RIL_VARIANT_LEGACY
+    p.writeInt32 (rilj_id);
+    ret = uri->responseFunction(p, data, datalen);
+#else
     p.writeInt32 (unsolResponse);
 
     ret = s_unsolResponses[unsolResponseIndex]
                 .responseFunction(p, data, datalen);
+#endif
     if (ret != 0) {
         // Problem with the response. Don't continue;
         goto error_exit;
