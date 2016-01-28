@@ -54,6 +54,7 @@
 #include <cutils/properties.h>
 
 #include <ril_event.h>
+#include <telephony/ril_log.h>
 
 namespace android {
 

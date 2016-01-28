@@ -34,6 +34,8 @@ static pthread_mutex_t listMutex;
 #define MUTEX_INIT() pthread_mutex_init(&listMutex, NULL)
 #define MUTEX_DESTROY() pthread_mutex_destroy(&listMutex)
 
+#include <telephony/ril_log.h>
+
 #ifndef timeradd
 #define timeradd(tvp, uvp, vvp)						\
 	do {								\

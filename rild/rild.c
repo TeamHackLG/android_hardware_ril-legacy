@@ -39,6 +39,8 @@
 #include <private/android_filesystem_config.h>
 #include "hardware/qemu_pipe.h"
 
+#include <telephony/ril_log.h>
+
 #define LIB_PATH_PROPERTY   "rild.libpath"
 #define LIB_ARGS_PROPERTY   "rild.libargs"
 #define MAX_LIB_ARGS        16

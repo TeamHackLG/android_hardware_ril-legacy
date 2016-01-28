@@ -35,6 +35,8 @@
 
 #include "misc.h"
 
+#include <telephony/ril_log.h>
+
 #ifdef HAVE_ANDROID_OS
 #define USE_NP 1
 #endif /* HAVE_ANDROID_OS */
