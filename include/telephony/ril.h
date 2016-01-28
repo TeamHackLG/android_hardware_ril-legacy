@@ -3795,42 +3795,6 @@ typedef struct {
  */
 #define RIL_REQUEST_SET_SUBSCRIPTION_MODE 122
 
-/**
- *  RIL_REQUEST_SET_SMS_PRE_STORE
- *
- *  Sets the sms preferred storage
- * "data" is const int *
- * ((const int *)data) [0]    1 indicates none, mean phone memory
-                              2 indicates card like SIM/USIM
- *
- * "response" is NULL
- *
- *  Valid errors:
- *
- *  SUCCESS
- *  GENERIC_FAILURE
- *
- */
-#define RIL_REQUEST_SET_SMS_PRE_STORE 123
-
-/**
- *  RIL_REQUEST_SET_SIM_SMS_READ
- *
- *  Sets the sms preferred storage
- * "data" is const int *
- * ((const int *)data) [0]    1 indicates index
-                              2 indicates message_mode, GW or CDMA
- *
- * "response" is NULL
- *
- *  Valid errors:
- *
- *  SUCCESS
- *  GENERIC_FAILURE
- *
- */
-#define RIL_REQUEST_SET_SIM_SMS_READ 124
-
 /***********************************************************************/
 
 
