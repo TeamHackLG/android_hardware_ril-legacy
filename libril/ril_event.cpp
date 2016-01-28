@@ -368,7 +368,6 @@ void ril_event_loop()
         n = select(nfds, &rfds, NULL, NULL, ptv);
         printReadies(&rfds);
         dlog("~~~~ %d events fired ~~~~", n);
-        ALOGE("~~~~ %d events fired ~~~~");
         if (n < 0) {
             if (errno == EINTR) continue;
 

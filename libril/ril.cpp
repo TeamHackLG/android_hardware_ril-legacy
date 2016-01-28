@@ -2807,7 +2807,6 @@ static void processWakeupCallback(int fd, short flags, void *param) {
     int ret;
 
     ALOGV("processWakeupCallback");
-    ALOGE("processWakeupCallback");
 
     /* empty our wakeup socket out */
     do {
