@@ -307,6 +307,8 @@ static UnsolResponseInfo s_unsolResponses[] = {
 #include "ril_unsol_commands.h"
 };
 
+int extlog = 0;
+
 static char * RIL_getRilSocketName() {
     return rild;
 }
@@ -486,6 +488,9 @@ processCommandBuffer(void *buffer, size_t buflen, int client_id) {
         return 0;
     }
 
+    if (extlog)
+        RLOGI("[ExtLog] > %s [id = %d, token = %d, size = %d]",
+            requestToString(request), request, token, buflen);
 
     pRI = (RequestInfo *)calloc(1, sizeof(RequestInfo));
 
@@ -3412,6 +3417,13 @@ RIL_register (const RIL_RadioFunctions *callbacks, int client_id) {
             sleep(delay);
         }
     } 
+    strcpy(prop_name, "ro.ril.extlog");
+    prop_len = property_get(prop_name, prop_val, "");
+    if (prop_len > 0) {
+        extlog = strtol(prop_val, NULL, 0);
+        RLOGI("extlog = %d", extlog);
+        if (extlog < 0) extlog = 0;
+    }
 
     if (callbacks == NULL) {
         ALOGE("RIL_register: RIL_RadioFunctions * null");
@@ -3584,6 +3596,11 @@ RIL_onRequestComplete(RIL_Token t, RIL_Errno e, void *response, size_t responsel
 
         goto done;
     }
+
+    if (extlog)
+        RLOGI("[ExtLog] < %s [id = %d, token = %d, size = %d, cancelled = %d, err = %d]", 
+            requestToString(pRI->pCI->requestNumber), pRI->pCI->requestNumber, pRI->token, 
+            responselen, pRI->cancelled, (int)e);
 
     appendPrintBuf("[%04d]< %s",
         pRI->token, requestToString(pRI->pCI->requestNumber));
@@ -3831,6 +3848,10 @@ RIL_onUnsolicitedSendResponse(int unsolResponse, void *data,
         return;
     }
 #endif
+
+    if (extlog)
+        RLOGI("[ExtLog] < %s [id = %d, size = %d]", 
+            requestToString(unsolResponse), unsolResponse, datalen);
 
     // Grab a wake lock if needed for this reponse,
     // as we exit we'll either release it immediately
