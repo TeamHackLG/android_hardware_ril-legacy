@@ -19,7 +19,8 @@
 ** limitations under the License.
 */
 
-#define LOG_TAG "RILC"
+char g_log_tag[12] = "RILC_x";
+#define LOG_TAG ((const char *)g_log_tag)
 
 #include <hardware_legacy/power.h>
 
@@ -3393,6 +3394,12 @@ extern "C" void
 RIL_register (const RIL_RadioFunctions *callbacks, int client_id) {
     int ret;
     int flags;
+
+    if (strcmp(RIL_getRilSocketName(), "rild") == 0) {
+        g_log_tag[5] = '0';
+    } else {
+        g_log_tag[5] = '1';
+    }
 
     if (callbacks == NULL) {
         ALOGE("RIL_register: RIL_RadioFunctions * null");
