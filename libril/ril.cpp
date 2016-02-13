@@ -3394,12 +3394,24 @@ extern "C" void
 RIL_register (const RIL_RadioFunctions *callbacks, int client_id) {
     int ret;
     int flags;
+    char prop_name[120];
+    char prop_val[PROPERTY_VALUE_MAX];
+    int prop_len;
 
     if (strcmp(RIL_getRilSocketName(), "rild") == 0) {
         g_log_tag[5] = '0';
     } else {
         g_log_tag[5] = '1';
     }
+    sprintf(prop_name, "ro.ril.delay_%c", g_log_tag[5]);
+    prop_len = property_get(prop_name, prop_val, "");
+    if (prop_len > 0) {
+        int delay = strtol(prop_val, NULL, 0);
+        if (delay > 0) {
+            RLOGI("delay = %d sec .... wait .....", delay);
+            sleep(delay);
+        }
+    } 
 
     if (callbacks == NULL) {
         ALOGE("RIL_register: RIL_RadioFunctions * null");
