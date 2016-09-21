@@ -5,7 +5,7 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_SRC_FILES:= \
+LOCAL_SRC_FILES := \
     reference-ril.c \
     atchannel.c \
     misc.c \
@@ -13,6 +13,9 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_SHARED_LIBRARIES := \
     liblog libcutils libutils libril
+
+# Disable usage of Clang Toolchain here
+LOCAL_CLANG := false
 
 # for asprinf
 LOCAL_CFLAGS := -D_GNU_SOURCE
@@ -24,28 +27,27 @@ endif
 LOCAL_C_INCLUDES := $(KERNEL_HEADERS)
 
 ifeq ($(TARGET_DEVICE),sooner)
-  LOCAL_CFLAGS += -DUSE_TI_COMMANDS
+    LOCAL_CFLAGS += -DUSE_TI_COMMANDS
 endif
 
 ifeq ($(TARGET_DEVICE),surf)
-  LOCAL_CFLAGS += -DPOLL_CALL_STATE -DUSE_QMI
+    LOCAL_CFLAGS += -DPOLL_CALL_STATE -DUSE_QMI
 endif
 
 ifeq ($(TARGET_DEVICE),dream)
-  LOCAL_CFLAGS += -DPOLL_CALL_STATE -DUSE_QMI
+    LOCAL_CFLAGS += -DPOLL_CALL_STATE -DUSE_QMI
 endif
 
 ifeq (foo,foo)
-  #build shared library
-  LOCAL_SHARED_LIBRARIES += \
-      libcutils libutils
-  LOCAL_CFLAGS += -DRIL_SHLIB
-  LOCAL_MODULE:= libreference-ril
-  include $(BUILD_SHARED_LIBRARY)
+    # build shared library
+    LOCAL_CFLAGS += -DRIL_SHLIB
+
+    LOCAL_MODULE := libreference-ril
+
+    include $(BUILD_SHARED_LIBRARY)
 else
-  #build executable
-  LOCAL_SHARED_LIBRARIES += \
-      libril
-  LOCAL_MODULE:= reference-ril
-  include $(BUILD_EXECUTABLE)
+    # build executable
+    LOCAL_MODULE := reference-ril
+
+    include $(BUILD_EXECUTABLE)
 endif

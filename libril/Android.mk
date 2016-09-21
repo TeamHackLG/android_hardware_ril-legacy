@@ -3,7 +3,7 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_SRC_FILES:= \
+LOCAL_SRC_FILES := \
     ril.cpp \
     ril_event.cpp
 
@@ -13,6 +13,9 @@ LOCAL_SHARED_LIBRARIES := \
     libbinder \
     libcutils \
     libhardware_legacy
+
+# Disable usage of Clang Toolchain here
+LOCAL_CLANG := false
 
 LOCAL_CFLAGS :=
 
@@ -24,7 +27,7 @@ ifeq ($(TARGET_RIL_VARIANT),legacy)
     LOCAL_CFLAGS += -DRIL_VARIANT_LEGACY
 endif
 
-LOCAL_MODULE:= libril
+LOCAL_MODULE := libril
 
 LOCAL_CLANG := false
 
